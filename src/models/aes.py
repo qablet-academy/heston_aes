@@ -2,6 +2,7 @@
 Qablet model based on Heston Almost Exact Simulation by Nicholas Burgess
 (https://github.com/nburgessx/Papers/tree/main/HestonSimulation)
 """
+
 import numpy as np
 
 
@@ -31,6 +32,7 @@ class HestonAESMCState(MCStateBase):
 
         # fetch the model parameters from the dataset
         self.n = dataset["MC"]["PATHS"]
+        # asset information
         self.asset = dataset["HESTON"]["ASSET"]
         self.asset_fwd = Forwards(dataset["ASSETS"][self.asset])
         self.spot = self.asset_fwd.forward(0)
@@ -40,8 +42,10 @@ class HestonAESMCState(MCStateBase):
         self.vbar = dataset["HESTON"]["LONG_VAR"]
         self.rho = dataset["HESTON"]["CORRELATION"]
 
-        # Initialize the arrays
+        # create a random number generator
         self.rng = Generator(SFC64(dataset["MC"]["SEED"]))
+
+        # Initialize the arrays
         self.x_vec = np.zeros(self.n)  # process x (log stock)
         # Initialize as a scalar, it will become a vector in the advance method
         self.v = dataset["HESTON"]["INITIAL_VAR"]

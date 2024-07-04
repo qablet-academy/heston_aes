@@ -14,14 +14,11 @@ class HestonMCState(MCStateBase):
     def __init__(self, timetable, dataset):
         """The advance method does the real work of the simulation. The __init__ method
         just makes the necessary parameters handy."""
-
         super().__init__(timetable, dataset)
 
+        # fetch the model parameters from the dataset
         self.n = dataset["MC"]["PATHS"]
-
-        # create a random number generator
-        self.rng = Generator(SFC64(dataset["MC"]["SEED"]))
-
+        # asset information
         self.asset = dataset["HESTON"]["ASSET"]
         self.asset_fwd = Forwards(dataset["ASSETS"][self.asset])
         self.spot = self.asset_fwd.forward(0)
@@ -32,6 +29,9 @@ class HestonMCState(MCStateBase):
             dataset["HESTON"]["MEANREV"],
             dataset["HESTON"]["CORRELATION"],
         )
+
+        # create a random number generator
+        self.rng = Generator(SFC64(dataset["MC"]["SEED"]))
 
         # Initialize the processes x (log stock) and v (variance)
         self.x_vec = np.zeros(self.n)  #
