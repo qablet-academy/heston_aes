@@ -11,7 +11,7 @@ from numpy.random import Generator, SFC64
 from qablet.base.utils import Forwards
 
 
-def CIR_Sample(NoOfPaths, kappa, gamma, vbar, s, t, v_s):
+def CIR_Sample(rng, n, kappa, gamma, vbar, s, t, v_s):
     delta = 4.0 * kappa * vbar / gamma / gamma
     c = 1.0 / (4.0 * kappa) * gamma * gamma * (1.0 - np.exp(-kappa * (t - s)))
     kappaBar = (
@@ -21,7 +21,7 @@ def CIR_Sample(NoOfPaths, kappa, gamma, vbar, s, t, v_s):
         * np.exp(-kappa * (t - s))
         / (gamma * gamma * (1.0 - np.exp(-kappa * (t - s))))
     )
-    sample = c * np.random.noncentral_chisquare(delta, kappaBar, NoOfPaths)
+    sample = c * rng.noncentral_chisquare(delta, kappaBar, n)
     return sample
 
 
@@ -66,7 +66,7 @@ class HestonAESMCState(MCStateBase):
 
         # Exact samples for the variance process
         new_v = CIR_Sample(
-            self.n, self.kappa, self.gamma, self.vbar, 0, dt, self.v
+            self.rng, self.n, self.kappa, self.gamma, self.vbar, 0, dt, self.v
         )
 
         # AES Constant Terms
