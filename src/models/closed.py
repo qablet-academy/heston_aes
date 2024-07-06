@@ -1,5 +1,8 @@
-# Closed form Heston Model.
-# Based on https://github.com/cantaro86/Financial-Models-Numerical-Methods/
+# Closed form Heston Model based on characteristic function.
+# This is the stable formulation proposed by Schoutens (2004), analyzed by Albrecher (2007),
+# used by Gatheral in (The Volatility Surface, 2006).
+# The code below is adapted from the implementation by Cantaro86 in
+# https://github.com/cantaro86/Financial-Models-Numerical-Methods/
 
 from functools import partial
 
