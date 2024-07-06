@@ -1,5 +1,6 @@
 """
-Qablet model based on Heston Almost Exact Simulation by Nicholas Burgess
+Qablet model based on Heston Almost Exact Simulation.
+Is is adapted from the implementation by Nicholas Burgess in
 (https://github.com/nburgessx/Papers/tree/main/HestonSimulation)
 """
 
