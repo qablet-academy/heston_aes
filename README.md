@@ -1,11 +1,12 @@
 # Heston Model
 
-In this repositary we examine a few different variations of the Heston model, for performance, accuracy, and calibration fit.
+In this repositary we examine a few different variations of the Heston model, for performance and accuracy.
 
 # Closed form and MC Models implemented in this repo
-- [Basic Heston Model](./src/models/basic.py)
-- [Closed form pricers](./src/models/closed.py) using charactertistic functions.
+- [Basic Simulation](./src/models/basic.py)
+- [Better Simulation](./src/models/better.py)
 - [Heston Almost Exact Simulation](./src/models/aes.py).
+- [Closed form](./src/models/closed.py) using charactertistic functions.
 
  All models are implemented with [Qablet MCModel Base](https://github.com/qablet-academy/intro/blob/main/notebooks/2_1_custom_mc.ipynb) so they can be used to price any Qablet timetable.
 

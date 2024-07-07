@@ -1,5 +1,5 @@
 """
-Basic Hestom Model without any optimizations
+Basic Hestom Model with log Euler discretization, without any other optimizations.
 """
 
 import numpy as np
@@ -8,7 +8,7 @@ from qablet.base.mc import MCModel, MCStateBase
 from qablet.base.utils import Forwards
 
 
-class HestonMCState(MCStateBase):
+class HestonMCBasicState(MCStateBase):
     def __init__(self, timetable, dataset):
         """The advance method does the real work of the simulation. The __init__ method
         just makes the necessary parameters handy."""
@@ -70,6 +70,6 @@ class HestonMCState(MCStateBase):
             return None
 
 
-class HestonMCModel(MCModel):
+class HestonMCBasic(MCModel):
     def state_class(self):
-        return HestonMCState
+        return HestonMCBasicState
