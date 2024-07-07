@@ -3,9 +3,7 @@ Basic Hestom Model without any optimizations
 """
 
 import numpy as np
-
 from numpy.random import SFC64, Generator
-
 from qablet.base.mc import MCModel, MCStateBase
 from qablet.base.utils import Forwards
 

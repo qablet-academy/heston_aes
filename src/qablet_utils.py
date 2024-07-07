@@ -1,11 +1,11 @@
 """Utilities for qablet models"""
 
-import pyarrow as pa
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pyarrow as pa
+from qablet.base.flags import Stats
 from qablet.base.utils import discounter_from_dataset
 from qablet_contracts.timetable import TS_EVENT_SCHEMA, py_to_ts
-from qablet.base.flags import Stats
 
 
 def option_prices(ticker, expirations, strikes, is_call, model, ref_dataset):

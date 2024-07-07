@@ -7,9 +7,8 @@
 from functools import partial
 
 import numpy as np
-from scipy.integrate import quad
-
 from qablet.base.utils import Forwards, discounter_from_dataset
+from scipy.integrate import quad
 
 
 def cf_heston(u, t, v0, mu, kappa, theta, sigma, rho):

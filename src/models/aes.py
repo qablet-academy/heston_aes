@@ -5,10 +5,8 @@ Is is adapted from the implementation by Nicholas Burgess in
 """
 
 import numpy as np
-
-
+from numpy.random import SFC64, Generator
 from qablet.base.mc import MCModel, MCStateBase
-from numpy.random import Generator, SFC64
 from qablet.base.utils import Forwards
 
 
@@ -89,9 +87,7 @@ class HestonAESMCState(MCStateBase):
         self.cur_time = new_time
 
     def get_value(self, unit):
-        """For units handled by this model, return the value of the unit at the current time.
-        For any other asset that may exist in the timetable, just return None. The model base will
-        use the default implementation (i.e. simply return the forward value)."""
+        """Return the value of the unit at the current time."""
         if unit == self.asset:
             return self.spot * np.exp(self.x_vec)
         else:
