@@ -17,7 +17,7 @@ In this repositary we examine a few different variations of the Heston model, fo
     - Forward Starting Options
     - Accumulator Cliquets
 
-- [Errors By Strike for Different Models](Model%20Errors%20By%20Strike.ipynb)
+- [Errors for Different Models](Model%20Errors.ipynb)
 - [Errors Distribution for Different Models](Model%20Erros%20distribution.ipynb)
 - [Plot RMSE vs Exec Time for Different Models](Model%20RMSE%20vs%20time.ipynb) (see plot below, for a vanilla call option with spot 100 and 1-year maturity.)
 
