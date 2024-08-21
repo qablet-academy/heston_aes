@@ -6,27 +6,28 @@ It also optimizes the cost of numpy operations.
 from math import sqrt
 
 import numpy as np
+from finmc.models.base import MCFixedStep
+from finmc.utils.assets import Discounter, Forwards
 from numpy.random import SFC64, Generator
-from qablet.base.mc import MCModel, MCStateBase
-from qablet.base.utils import Forwards
 
 
 # Define a class for the state of a single asset Heston MC process
-class HestonMCBetterState(MCStateBase):
-    def __init__(self, timetable, dataset):
-        super().__init__(timetable, dataset)
-
+class HestonMCBetter(MCFixedStep):
+    def reset(self, dataset):
         self.shape = dataset["MC"]["PATHS"]
+        self.timestep = dataset["MC"]["TIMESTEP"]
+
         assert self.shape % 2 == 0, "Number of paths must be even"
         self.n = self.shape >> 1  # divide by 2
 
         self.asset = dataset["HESTON"]["ASSET"]
         self.asset_fwd = Forwards(dataset["ASSETS"][self.asset])
         self.spot = self.asset_fwd.forward(0)
+        self.discounter = Discounter(dataset["ASSETS"][dataset["BASE"]])
 
         self.heston_params = (
             dataset["HESTON"]["LONG_VAR"],
-            dataset["HESTON"]["VOL_OF_VAR"],
+            dataset["HESTON"]["VOL_OF_VOL"],
             dataset["HESTON"]["MEANREV"],
             dataset["HESTON"]["CORRELATION"],
         )
@@ -49,11 +50,9 @@ class HestonMCBetterState(MCStateBase):
 
         self.cur_time = 0
 
-    def advance(self, new_time):
+    def advance_step(self, new_time):
         """Update x_vec, v_vec in place when we move simulation by time dt."""
         dt = new_time - self.cur_time
-        if dt < 1e-10:
-            return
 
         (theta, vvol, meanrev, corr) = self.heston_params
         fwd_rate = self.asset_fwd.rate(new_time, self.cur_time)
@@ -124,10 +123,6 @@ class HestonMCBetterState(MCStateBase):
         """Return the value of the unit at the current time."""
         if unit == self.asset:
             return self.spot * np.exp(self.x_vec)
-        else:
-            return None
 
-
-class HestonMCBetter(MCModel):
-    def state_class(self):
-        return HestonMCBetterState
+    def get_df(self):
+        return self.discounter.discount(self.cur_time)

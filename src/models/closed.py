@@ -84,7 +84,7 @@ def price_vanilla_call(
         v0=heston_data["INITIAL_VAR"],
         mu=mu,
         theta=heston_data["LONG_VAR"],
-        sigma=heston_data["VOL_OF_VAR"],
+        sigma=heston_data["VOL_OF_VOL"],
         kappa=heston_data["MEANREV"],
         rho=heston_data["CORRELATION"],
     )
