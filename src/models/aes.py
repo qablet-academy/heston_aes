@@ -5,9 +5,9 @@ Is is adapted from the implementation by Nicholas Burgess in
 """
 
 import numpy as np
+from finmc.models.base import MCFixedStep
+from finmc.utils.assets import Discounter, Forwards
 from numpy.random import SFC64, Generator
-from qablet.base.mc import MCModel, MCStateBase
-from qablet.base.utils import Forwards
 
 
 def CIR_Sample(rng, n, kappa, gamma, vbar, s, t, v_s):
@@ -24,39 +24,41 @@ def CIR_Sample(rng, n, kappa, gamma, vbar, s, t, v_s):
     return sample
 
 
-class HestonAESMCState(MCStateBase):
-    def __init__(self, timetable, dataset):
+class HestonAESMC(MCFixedStep):
+    def reset(self):
         """Initialize internal state of the model."""
-        super().__init__(timetable, dataset)
 
         # fetch the model parameters from the dataset
-        self.n = dataset["MC"]["PATHS"]
-        # asset information
-        self.asset = dataset["HESTON"]["ASSET"]
-        self.asset_fwd = Forwards(dataset["ASSETS"][self.asset])
-        self.spot = self.asset_fwd.forward(0)
+        self.n = self.dataset["MC"]["PATHS"]
+        self.timestep = self.dataset["MC"]["TIMESTEP"]
 
-        self.gamma = dataset["HESTON"]["VOL_OF_VAR"]
-        self.kappa = dataset["HESTON"]["MEANREV"]
-        self.vbar = dataset["HESTON"]["LONG_VAR"]
-        self.rho = dataset["HESTON"]["CORRELATION"]
+        # asset information
+        self.asset = self.dataset["HESTON"]["ASSET"]
+        self.asset_fwd = Forwards(self.dataset["ASSETS"][self.asset])
+        self.spot = self.asset_fwd.forward(0)
+        self.discounter = Discounter(
+            self.dataset["ASSETS"][self.dataset["BASE"]]
+        )
+
+        self.gamma = self.dataset["HESTON"]["VOL_OF_VOL"]
+        self.kappa = self.dataset["HESTON"]["MEANREV"]
+        self.vbar = self.dataset["HESTON"]["LONG_VAR"]
+        self.rho = self.dataset["HESTON"]["CORRELATION"]
 
         # create a random number generator
-        self.rng = Generator(SFC64(dataset["MC"]["SEED"]))
+        self.rng = Generator(SFC64(self.dataset["MC"]["SEED"]))
 
         # Initialize the arrays
         self.x_vec = np.zeros(self.n)  # process x (log stock)
         # Initialize as a scalar, it will become a vector in the advance method
-        self.v = dataset["HESTON"]["INITIAL_VAR"]
+        self.v = self.dataset["HESTON"]["INITIAL_VAR"]
 
         self.cur_time = 0
 
-    def advance(self, new_time):
+    def step(self, new_time):
         """Advance the internal state of the model to current time."""
 
         dt = new_time - self.cur_time
-        if dt < 1e-10:
-            return
 
         r = self.asset_fwd.rate(new_time, self.cur_time)
 
@@ -90,10 +92,8 @@ class HestonAESMCState(MCStateBase):
         """Return the value of the unit at the current time."""
         if unit == self.asset:
             return self.spot * np.exp(self.x_vec)
-        else:
-            return None
+        elif unit == "variance":
+            return self.v
 
-
-class HestonAESMC(MCModel):
-    def state_class(self):
-        return HestonAESMCState
+    def get_df(self):
+        return self.discounter.discount(self.cur_time)
