@@ -23,6 +23,7 @@ class MCPricer:
         """
 
         model_state = self.state_class(dataset)
+        model_state.reset()
         price = mc_price(
             timetable["events"],
             model_state,

@@ -25,35 +25,37 @@ def CIR_Sample(rng, n, kappa, gamma, vbar, s, t, v_s):
 
 
 class HestonAESMC(MCFixedStep):
-    def reset(self, dataset):
+    def reset(self):
         """Initialize internal state of the model."""
 
         # fetch the model parameters from the dataset
-        self.n = dataset["MC"]["PATHS"]
-        self.timestep = dataset["MC"]["TIMESTEP"]
+        self.n = self.dataset["MC"]["PATHS"]
+        self.timestep = self.dataset["MC"]["TIMESTEP"]
 
         # asset information
-        self.asset = dataset["HESTON"]["ASSET"]
-        self.asset_fwd = Forwards(dataset["ASSETS"][self.asset])
+        self.asset = self.dataset["HESTON"]["ASSET"]
+        self.asset_fwd = Forwards(self.dataset["ASSETS"][self.asset])
         self.spot = self.asset_fwd.forward(0)
-        self.discounter = Discounter(dataset["ASSETS"][dataset["BASE"]])
+        self.discounter = Discounter(
+            self.dataset["ASSETS"][self.dataset["BASE"]]
+        )
 
-        self.gamma = dataset["HESTON"]["VOL_OF_VOL"]
-        self.kappa = dataset["HESTON"]["MEANREV"]
-        self.vbar = dataset["HESTON"]["LONG_VAR"]
-        self.rho = dataset["HESTON"]["CORRELATION"]
+        self.gamma = self.dataset["HESTON"]["VOL_OF_VOL"]
+        self.kappa = self.dataset["HESTON"]["MEANREV"]
+        self.vbar = self.dataset["HESTON"]["LONG_VAR"]
+        self.rho = self.dataset["HESTON"]["CORRELATION"]
 
         # create a random number generator
-        self.rng = Generator(SFC64(dataset["MC"]["SEED"]))
+        self.rng = Generator(SFC64(self.dataset["MC"]["SEED"]))
 
         # Initialize the arrays
         self.x_vec = np.zeros(self.n)  # process x (log stock)
         # Initialize as a scalar, it will become a vector in the advance method
-        self.v = dataset["HESTON"]["INITIAL_VAR"]
+        self.v = self.dataset["HESTON"]["INITIAL_VAR"]
 
         self.cur_time = 0
 
-    def advance_step(self, new_time):
+    def step(self, new_time):
         """Advance the internal state of the model to current time."""
 
         dt = new_time - self.cur_time
@@ -90,6 +92,8 @@ class HestonAESMC(MCFixedStep):
         """Return the value of the unit at the current time."""
         if unit == self.asset:
             return self.spot * np.exp(self.x_vec)
+        elif unit == "variance":
+            return self.v
 
     def get_df(self):
         return self.discounter.discount(self.cur_time)

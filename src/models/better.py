@@ -13,31 +13,35 @@ from numpy.random import SFC64, Generator
 
 # Define a class for the state of a single asset Heston MC process
 class HestonMCBetter(MCFixedStep):
-    def reset(self, dataset):
-        self.shape = dataset["MC"]["PATHS"]
-        self.timestep = dataset["MC"]["TIMESTEP"]
+    milstein = False
+
+    def reset(self):
+        self.shape = self.dataset["MC"]["PATHS"]
+        self.timestep = self.dataset["MC"]["TIMESTEP"]
 
         assert self.shape % 2 == 0, "Number of paths must be even"
         self.n = self.shape >> 1  # divide by 2
 
-        self.asset = dataset["HESTON"]["ASSET"]
-        self.asset_fwd = Forwards(dataset["ASSETS"][self.asset])
+        self.asset = self.dataset["HESTON"]["ASSET"]
+        self.asset_fwd = Forwards(self.dataset["ASSETS"][self.asset])
         self.spot = self.asset_fwd.forward(0)
-        self.discounter = Discounter(dataset["ASSETS"][dataset["BASE"]])
+        self.discounter = Discounter(
+            self.dataset["ASSETS"][self.dataset["BASE"]]
+        )
 
         self.heston_params = (
-            dataset["HESTON"]["LONG_VAR"],
-            dataset["HESTON"]["VOL_OF_VOL"],
-            dataset["HESTON"]["MEANREV"],
-            dataset["HESTON"]["CORRELATION"],
+            self.dataset["HESTON"]["LONG_VAR"],
+            self.dataset["HESTON"]["VOL_OF_VOL"],
+            self.dataset["HESTON"]["MEANREV"],
+            self.dataset["HESTON"]["CORRELATION"],
         )
 
         # create a random number generator
-        self.rng = Generator(SFC64(dataset["MC"]["SEED"]))
+        self.rng = Generator(SFC64(self.dataset["MC"]["SEED"]))
 
         # Initialize the processes x (log stock) and v (variance)
         self.x_vec = np.zeros(self.shape)
-        self.v_vec = np.full(self.shape, dataset["HESTON"]["INITIAL_VAR"])
+        self.v_vec = np.full(self.shape, self.dataset["HESTON"]["INITIAL_VAR"])
 
         # We will reduce time spent in memory allocation by creating arrays in advance
         # and reusing them in the `advance` function which is called repeatedly.
@@ -50,7 +54,7 @@ class HestonMCBetter(MCFixedStep):
 
         self.cur_time = 0
 
-    def advance_step(self, new_time):
+    def step(self, new_time):
         """Update x_vec, v_vec in place when we move simulation by time dt."""
         dt = new_time - self.cur_time
 
@@ -97,7 +101,10 @@ class HestonMCBetter(MCFixedStep):
 
         # update the current value of v (variance process)
         # first term: v += meanrev * (theta - v) * dt
-        np.subtract(theta, self.vplus_vec, out=self.tmp_vec)
+        if self.milstein:
+            np.subtract(theta, self.vplus_vec, out=self.tmp_vec)
+        else:
+            np.subtract(theta, self.v_vec, out=self.tmp_vec)
         np.multiply(self.tmp_vec, (meanrev * dt), out=self.tmp_vec)
         np.add(self.v_vec, self.tmp_vec, out=self.v_vec)
 
@@ -108,21 +115,28 @@ class HestonMCBetter(MCFixedStep):
 
         # Milstein correction
         # third term: v += 0.25 * vvol * vvol * (dz2 ** 2 - dt)
-        np.multiply(self.dz2_vec, self.dz2_vec, out=self.tmp_vec)
-        np.subtract(self.tmp_vec, dt, out=self.tmp_vec)
-        np.multiply(
-            0.25 * vvol * vvol,
-            self.tmp_vec,
-            out=self.tmp_vec,
-        )
-        np.add(self.v_vec, self.tmp_vec, out=self.v_vec)
-
+        if self.milstein:
+            np.multiply(self.dz2_vec, self.dz2_vec, out=self.tmp_vec)
+            np.subtract(self.tmp_vec, dt, out=self.tmp_vec)
+            np.multiply(
+                0.25 * vvol * vvol,
+                self.tmp_vec,
+                out=self.tmp_vec,
+            )
+            np.add(self.v_vec, self.tmp_vec, out=self.v_vec)
+            # print(f"M {self.tmp_vec.mean() * 1000_000:.4f}")
         self.cur_time = new_time
 
     def get_value(self, unit):
         """Return the value of the unit at the current time."""
         if unit == self.asset:
             return self.spot * np.exp(self.x_vec)
+        elif unit == "variance":
+            return self.v_vec
 
     def get_df(self):
         return self.discounter.discount(self.cur_time)
+
+
+class HestonMCMilstein(HestonMCBetter):
+    milstein = True
